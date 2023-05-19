@@ -1,5 +1,7 @@
 import Address from "../value-object/address";
 import Customer from "./customer";
+import EventDispatcher from "../../@shared/event/event-dispatcher";
+import EventHandlerInterface from "../../@shared/event/event-handler.interface";
 
 describe("Customer unit tests", () => {
   it("should throw error when id is empty", () => {
@@ -59,5 +61,20 @@ describe("Customer unit tests", () => {
 
     customer.addRewardPoints(10);
     expect(customer.rewardPoints).toBe(20);
+  });
+
+  it("should change address and notify event", () => {
+    const customer = new Customer("a1b2c3", "Samuel Correia");
+    const newAddress = new Address("Quadra 7", 1020, "72330-250", "Brasília");
+
+    const eventDispatcher = (customer as any)['_eventDispatcher'] as EventDispatcher;
+    const eventHandler = (customer as any)['_eventHandler'] as EventHandlerInterface;
+    const spyEventHandler = jest.spyOn(eventHandler, 'handle');
+
+    customer.changeAddress(newAddress);
+
+    expect(customer.Address).toStrictEqual(newAddress);
+    expect(eventDispatcher.getEventHandlers["CustomerAddressChangedEvent"][0]).toMatchObject(eventHandler);
+    expect(spyEventHandler).toHaveBeenCalled();
   });
 });

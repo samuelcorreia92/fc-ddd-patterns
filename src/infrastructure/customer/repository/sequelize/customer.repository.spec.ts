@@ -3,6 +3,8 @@ import Customer from "../../../../domain/customer/entity/customer";
 import Address from "../../../../domain/customer/value-object/address";
 import CustomerModel from "./customer.model";
 import CustomerRepository from "./customer.repository";
+import EventDispatcher from "../../../../domain/@shared/event/event-dispatcher";
+import EventHandlerInterface from "../../../../domain/@shared/event/event-handler.interface";
 
 describe("Customer repository test", () => {
   let sequelize: Sequelize;
@@ -28,6 +30,13 @@ describe("Customer repository test", () => {
     const customer = new Customer("123", "Customer 1");
     const address = new Address("Street 1", 1, "Zipcode 1", "City 1");
     customer.Address = address;
+
+    const eventDispatcher = (customerRepository as any)['_eventDispatcher'] as EventDispatcher;
+    const eventHandler1 = (customerRepository as any)['_eventHandler1'] as EventHandlerInterface;
+    const eventHandler2 = (customerRepository as any)['_eventHandler2'] as EventHandlerInterface;
+    const spyEventHandler1 = jest.spyOn(eventHandler1, 'handle');
+    const spyEventHandler2 = jest.spyOn(eventHandler2, 'handle');
+
     await customerRepository.create(customer);
 
     const customerModel = await CustomerModel.findOne({ where: { id: "123" } });
@@ -42,6 +51,11 @@ describe("Customer repository test", () => {
       zipcode: address.zip,
       city: address.city,
     });
+
+    expect(eventDispatcher.getEventHandlers["CustomerCreatedEvent"][0]).toMatchObject(eventHandler1);
+    expect(eventDispatcher.getEventHandlers["CustomerCreatedEvent"][1]).toMatchObject(eventHandler2);
+    expect(spyEventHandler1).toHaveBeenCalled();
+    expect(spyEventHandler2).toHaveBeenCalled();
   });
 
   it("should update a customer", async () => {

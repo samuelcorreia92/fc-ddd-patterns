@@ -1,6 +1,15 @@
 import Address from "../value-object/address";
+import EventDispatcher from "../../@shared/event/event-dispatcher";
+import EventDispatcherInterface from "../../@shared/event/event-dispatcher.interface";
+import EnviaConsoleLogHandler from "../event/handler/EnviaConsoleLogHandler";
+import CustomerAddressChangedEvent from "../event/customer-address-changed.event";
+import EventHandlerInterface from "../../@shared/event/event-handler.interface";
 
 export default class Customer {
+
+  private _eventHandler: EventHandlerInterface;
+  private _eventDispatcher: EventDispatcherInterface;
+
   private _id: string;
   private _name: string = "";
   private _address!: Address;
@@ -11,6 +20,10 @@ export default class Customer {
     this._id = id;
     this._name = name;
     this.validate();
+
+    this._eventHandler = new EnviaConsoleLogHandler();
+    this._eventDispatcher = new EventDispatcher();
+    this._eventDispatcher.register("CustomerAddressChangedEvent", this._eventHandler);
   }
 
   get id(): string {
@@ -45,6 +58,7 @@ export default class Customer {
   
   changeAddress(address: Address) {
     this._address = address;
+    this._eventDispatcher.notify(new CustomerAddressChangedEvent(this));
   }
 
   isActive(): boolean {
